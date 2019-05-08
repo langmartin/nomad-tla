@@ -1,0 +1,16 @@
+graph {
+      "deploymentwatcher.Watcher" -- "deploymentWatcher0";
+      "deploymentwatcher.Watcher" -- "deploymentWatcher1";
+
+      "deploymentWatcher0" -- Job;
+      "deploymentWatcher0" -- Deployment;
+
+      Allocation -- Job;
+      Allocation -- Deployment;
+
+      Deployment -- TaskGroups0;
+      Deployment -- TaskGroups1;
+
+      TaskGroups0 -- PlacedCanaries;
+      PlacedCanaries[label="PlacedCanaries []String"]
+}
