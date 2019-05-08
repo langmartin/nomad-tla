@@ -1,0 +1,33 @@
+
+
+state immutable (?)
+raft state merge ?
+
+
+
+
+
+
+s = new sysSched
+  { state }
+
+s.Process(eval)
+        for retry until ok
+            process
+
+
+f process
+  s.queuedAllocs = new map
+  s.nodes = readyNodes()
+
+computePlacements
+
+
+
+
+computedClass mismatch
+
+
+
+node comes up
+ forall sysjobs make eval
