@@ -1,16 +1,29 @@
-graph {
-      "deploymentwatcher.Watcher" -- "deploymentWatcher0";
-      "deploymentwatcher.Watcher" -- "deploymentWatcher1";
+digraph {
+	subgraph {
+		"deploymentwatcher.Watcher" -> "deploymentWatcher0";
+		"deploymentwatcher.Watcher" -> "deploymentWatcher1";
 
-      "deploymentWatcher0" -- Job;
-      "deploymentWatcher0" -- Deployment;
+		"deploymentWatcher0" -> Job;
+		"deploymentWatcher0" -> Deployment;
 
-      Allocation -- Job;
-      Allocation -- Deployment;
+		Deployment -> TaskGroups0;
+		Deployment -> TaskGroups1;
 
-      Deployment -- TaskGroups0;
-      Deployment -- TaskGroups1;
+		TaskGroups0 -> PlacedCanaries
+		PlacedCanaries[label=<PlacedCanaries<br/>
+			       <font point-size="10">[]String Allocation IDs</font>>]
 
-      TaskGroups0 -- PlacedCanaries;
-      PlacedCanaries[label="PlacedCanaries []String"]
+		// TaskGroups0 -> PlacedCanaries0;
+		// TaskGroups0 -> PlacedCanaries1;
+		// PlacedCanaries[xlabel="string allocation ids"]
+		// PlacedCanaries0 -> Allocation0[style=dotted,weight=0]
+	}
+
+	subgraph {
+		State -> Allocation0;
+		State -> Allocation1;
+		Allocation0 -> Job;
+		Allocation0 -> Deployment;
+	}
+
 }
