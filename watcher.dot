@@ -6,17 +6,15 @@ digraph {
 		"deploymentWatcher0" -> Job;
 		"deploymentWatcher0" -> Deployment;
 
-		Deployment -> TaskGroups0;
-		Deployment -> TaskGroups1;
+		Deployment -> TaskGroups
+		TaskGroups[xlabel="map"]
+		TaskGroups -> DeploymentState1;
+		TaskGroups -> DeploymentState0;
 
-		TaskGroups0 -> PlacedCanaries
-		PlacedCanaries[label=<PlacedCanaries<br/>
-			       <font point-size="10">[]String Allocation IDs</font>>]
-
-		// TaskGroups0 -> PlacedCanaries0;
-		// TaskGroups0 -> PlacedCanaries1;
-		// PlacedCanaries[xlabel="string allocation ids"]
-		// PlacedCanaries0 -> Allocation0[style=dotted,weight=0]
+		DeploymentState0 -> PlacedCanaries
+		// PlacedCanaries[label=<PlacedCanaries<br/><font point-size="10">[]String Allocation IDs</font>>]
+		// PlacedCanaries[xlabel="[]String (Allocation.ID)"]
+		PlacedCanaries -> Allocation1[style=dotted,weight=0,xlabel="string id"]
 	}
 
 	subgraph {
