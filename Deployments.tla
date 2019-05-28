@@ -6,99 +6,77 @@ CONSTANTS Jobs, Deployments
 
 \* Sets of Deployments
 VARIABLES watched, archive
+GlobalVars == <<watched, archive>>
 
 \* Attributes of Deployments per Deployment (functions in the domain of Deployments)
-VARIABLES job, status, type, count, healthy, time
+VARIABLES status, count, healthy, time,
+	  canaries, healthy_canaries
+DeploymentVars == <<status, count, healthy, time, canaries, healthy_canaries>>
 
-StatusOk == {"running", "needs_promotion"}
-StatusBad == {"failed"}
-StatusAny == StatusOk \union StatusBad
+StatusType == {"running", "needs_promotion", "failed"}
 
-DeploymentType == {"auto_promote", "auto_revert", "canary", "blue_green"}
-
-\* Jobs == 1..3
-
-\* Deployments ==
-\*   \* the set of all possible deployments
-\*   [type: DeploymentType, status: StatusAny, count: 1..3, healthy: 1..3, job: Jobs, time: 1..3]
+DeploymentType == {"canary", "blue_green"}
+DeploymentOpts == {"auto_promote", "auto_revert"}
 
 TypeOk ==
   /\ watched \in Deployments
-  /\ archive \in [Jobs -> Deployments]
+  /\ archive \in Deployments
 
 Init ==
-  /\ watched = Deployments
-  /\ archive = [Jobs: {}]
+  /\ watched = [id: Deployments, job: Jobs, type: DeploymentType, opts: DeploymentOpts]
+  /\ archive = {}
+  /\ status = [watched: {"running"}]
+  /\ count = [watched: {3}]
+  /\ healthy = [watched: {1}]
+  /\ time = [watched: {0}]
+  /\ canaries = [watched: {2}]
+  /\ healthy_canaries = [watched: {0}]
 
 -----------------------------------------------------------------------------
 
+\* Stop watching the deployment, archive it for future rollbacks
 WatchedArchive(d) ==
-  \* Stop watching the deployment, archive it for future rollbacks
-  /\ archive[d.job]' = archive[d.job] \union {d}
+  /\ archive' = archive \union {d}
   /\ watched' \ {d}
+  /\ UNCHANGED <<DeploymentVars>>
 
+\* If failed and drained, archive. Otherwise drain
 WatchedFail(d) ==
-  \* If failed and drained, archive. Otherwise drain
-  \/ /\ d.status = "failed"
-     /\ d.healthy = 0
+  \/ /\ status[d] = "failed"
+     /\ healthy[d] = 0
      /\ WatchedArchive(d)
-  \/ /\ d.status' = "failed"
-     /\ d.healthy' = d.healthy - 1
-     /\ UNCHANGED <<archive>>
+  \/ /\ status[d]' = "failed"
+     /\ healthy[d]' = healthy[d] - 1
+     /\ UNCHANGED <<archive, count, time>>
 
 WatchedSucceed(d) ==
-  /\ d.count = d.healthy
+  /\ count[d] = healthy[d]
   /\ WatchedArchive(d)
 
+WatchedNeedsPromote(d) ==
+  /\ d.type = "
+  /\ d \in watching
+  /\ status[d] = "running"
+  /\ canaries[d] = healthy_canaries[d]
+  /\ needs[d]
+
 WatchedTimeout(d) ==
-  /\ d.time = 3
-  /\ d.status' = "failed"
+  /\ time[d] = 3
+  /\ status[d]' = "failed"
+  /\ UNCHANGED <<count, GlobalVars>>
 
-WatchedRun(d) ==
-  /\ d.status \in StatusOk
-  /\ \/ WatchedSucceed(d)
-     \/ WatchedTimeout(d)
-     \/ d.time' =
-
-
-
+WatchedTick(d) ==
+  /\ time[d]' = time[d] + 1
+  /\ UNCHANGED <<GlobalVars, status, count, healthy>>
 
 WatchedNext(d) ==
-  \* advance the state of a watched deployment
   \/ WatchedFail(d)
-  \/ WatchedRun(d)
-
+  \/ WatchedSucceed(d)
+  \/ WatchedTimeout(d)
+  \/ WatchedTick(d)
 
 Next == \A d \in watched: WatchedNext(d)
 
-Spec == /\ Init /\ <>Next
-
-
-
-
-RollingBack == status = "rollback"
-
-Rollback == /\ RollingBack
-            /\ old' = old + 1
-            /\ new' = new - 1
-            /\ count' = count
-            /\ status' = "rollback"
-
-RolledBack == /\ RollingBack
-              /\ new = 0
-
-Promoting == status = "promote"
-
-Promote == /\ Promoting
-           /\ old' = old - 1
-           /\ new' = new + 1
-           /\ count' = count
-
-Promoted == /\ Promoting
-            /\ old = 0
-
-
-Live == Promoting \/ Promoted \/ RollingBack \/ RolledBack
-Next == Promote \/ Rollback
+Spec == /\ Init /\ Next
 
 =============================================================================
