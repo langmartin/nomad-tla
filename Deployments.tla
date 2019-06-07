@@ -10,17 +10,14 @@ GlobalVars == <<watched, archive>>
 
 \* Attributes of Deployments per Deployment (functions in the domain of Deployments)
 VARIABLES status, count, healthy, time,
-	  canaries, healthy_canaries
-DeploymentVars == <<status, count, healthy, time, canaries, healthy_canaries>>
+	  canaries, healthy_canaries,
+	  needs_promotion
+DeploymentVars == <<status, count, healthy, time, canaries, healthy_canaries, needs_promotion>>
 
 StatusType == {"running", "needs_promotion", "failed"}
 
 DeploymentType == {"canary", "blue_green"}
 DeploymentOpts == {"auto_promote", "auto_revert"}
-
-TypeOk ==
-  /\ watched \in Deployments
-  /\ archive \in Deployments
 
 Init ==
   /\ watched = [id: Deployments, job: Jobs, type: DeploymentType, opts: DeploymentOpts]
@@ -31,6 +28,7 @@ Init ==
   /\ time = [watched: {0}]
   /\ canaries = [watched: {2}]
   /\ healthy_canaries = [watched: {0}]
+  /\ needs_promotion = [watched: {FALSE}]
 
 -----------------------------------------------------------------------------
 
@@ -54,11 +52,13 @@ WatchedSucceed(d) ==
   /\ WatchedArchive(d)
 
 WatchedNeedsPromote(d) ==
-  /\ d.type = "
-  /\ d \in watching
+  /\ d.type = "canary"
+  /\ d.opts # "auto_promote"
+  /\ d \in watched
   /\ status[d] = "running"
   /\ canaries[d] = healthy_canaries[d]
-  /\ needs[d]
+  /\ needs_promotion[d]' = TRUE
+  /\ UNCHANGED <<GlobalVars, DeploymentVars>>
 
 WatchedTimeout(d) ==
   /\ time[d] = 3
@@ -71,6 +71,7 @@ WatchedTick(d) ==
 
 WatchedNext(d) ==
   \/ WatchedFail(d)
+  \/ WatchedNeedsPromote(d)
   \/ WatchedSucceed(d)
   \/ WatchedTimeout(d)
   \/ WatchedTick(d)
